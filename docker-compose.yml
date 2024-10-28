@@ -13,7 +13,7 @@ services:
       timeout: 5s
       retries: 5
   app:
-    image: case-app
+    build: .
     ports: 
       - 13000:8080
     depends_on:
