@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification System</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0e0e0;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        #orders,
+        #notifications {
+            flex: 1;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-height: 600px;
+        }
+
+        #notifications {
+            margin-left: 20px;
+        }
+
+        .order-box {
+            border: 1px solid #007bff;
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, opacity 0.3s;
+            opacity: 1;
+            margin-bottom: 10px;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+
+        .order-details {
+            margin-bottom: 10px;
+            font-size: 0.95em;
+            color: #555;
+        }
+
+        .detail {
+            margin: 5px 0;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .ok-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .ok-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .fade-out {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .products-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h2>Placing Orders</h2>
+        <button class="products-button" onclick="window.location.href='/api/products'">
+            Products
+        </button>
+    </div>
+    <h1>Admin Panel</h1>
+    <div class="container">
+        <div id="orders">
+            <h2>Orders</h2>
+            <% orders.reverse().forEach(order => { %>
+            <div class="order-box" data-order-id="<%= order.id %>">
+                <div class="order-details">
+                    <div class="detail"><span class="detail-label">Order ID:</span> <%= order.id %></div>
+                    <div class="detail"><span class="detail-label">Order Time:</span>
+                        <%= new Date(order.order_time).toLocaleString() %></div>
+                    <div class="detail"><span class="detail-label">Status:</span> <%= order.status %></div>
+                </div>
+                <select class="status-select" data-order-id="<%= order.id %>">
+                    <option value="Waiting">Waiting</option>
+                    <option value="Processed">Processed</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                </select>
+                <button class="update-button" data-order-id="<%= order.id %>">Update Status</button>
+                <button class="delete-button" data-order-id="<%= order.id %>">Delete</button>
+            </div>
+            <% }); %>
+        </div>
+        <div id="notifications">
+            <h2>Notifications</h2>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        socket.on('newOrder', (order) => {
+            const notificationsDiv = document.getElementById('notifications');
+            const notificationBox = document.createElement('div');
+            notificationBox.className = 'order-box';
+
+            const title = document.createElement('div');
+            title.className = 'notification-title';
+            title.innerText = 'New Order Received';
+
+            const details = document.createElement('div');
+            details.className = 'order-details';
+
+            details.innerHTML = `
+                <div class="detail"><span class="detail-label">Order ID:</span> ${order.id}</div>
+                <div class="detail"><span class="detail-label">Order Time:</span> ${new Date(order.order_time).toLocaleString()}</div>
+                <div class="detail"><span class="detail-label">Product Name:</span> ${order.productName}</div>
+                <div class="detail"><span class="detail-label">Status:</span> ${order.status}</div>
+                <div class="detail"><span class="detail-label">Username:</span> ${order.orderingUserName}</div>
+            `;
+
+            const okButton = document.createElement('button');
+            okButton.className = 'ok-button';
+            okButton.innerText = 'OK';
+            okButton.onclick = () => {
+                notificationBox.classList.add('fade-out');
+                setTimeout(() => {
+                    notificationsDiv.removeChild(notificationBox);
+                }, 300);
+            };
+
+            notificationBox.appendChild(title);
+            notificationBox.appendChild(details);
+            notificationBox.appendChild(okButton);
+            notificationsDiv.appendChild(notificationBox);
+        });
+    </script>
+    <script>
+        document.querySelectorAll('.delete-button').forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const orderId = event.target.getAttribute('data-order-id');
+                const orderDiv = event.target.closest('.order-box');
+
+                if (confirm('Are you sure you want to delete this order?')) {
+                    try {
+                        const response = await fetch('/api/orders/deleteorder', {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                orderId
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to delete the order.');
+                        }
+
+                        orderDiv.remove();
+                        alert('Order deleted successfully.');
+                    } catch (error) {
+                        console.error(error);
+                        alert('Error deleting the order. Please try again.');
+                    }
+                }
+            });
+        });
+    </script>
+    <script>
+        document.querySelectorAll('.update-button').forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const orderId = event.target.getAttribute('data-order-id');
+                const statusSelect = document.querySelector(
+                    `.status-select[data-order-id="${orderId}"]`);
+                const newStatus = statusSelect.value;
+
+                try {
+                    const response = await fetch('/api/orders/updateorder', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            orderId,
+                            newStatus
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to update the order status.');
+                    }
+
+                    const updatedOrder = await response.json();
+                    alert('Order status updated successfully.');
+
+                    const currentStatusDetail = statusSelect.parentElement.querySelectorAll(
+                        '.detail-label')[2].nextSibling;
+                    currentStatusDetail.textContent = ` ${updatedOrder.status}`;
+                } catch (error) {
+                    console.error(error);
+                    alert('Error updating the order status. Please try again.');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "case-furkantuncer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "dotenv": "^16.4.5",
+    "ejs": "~2.6.1",
+    "express": "^4.21.1",
+    "express-async-handler": "^1.2.0",
+    "nodemon": "^3.1.7",
+    "pg": "^8.13.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  }
+}

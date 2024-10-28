@@ -1,0 +1,21 @@
+version: "3.5"
+
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: password123
+      POSTGRES_USER: user123
+      POSTGRES_DB: adminpanel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user123 -d adminpanel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  app:
+    image: case-app
+    ports: 
+      - 13000:8080
+    depends_on:
+      db:
+        condition: service_healthy
